@@ -4,20 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0e1118">
-  <title>DDS Viewer</title>
+  <title>Image Viewer</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <a class="brand" href="./"><span class="brand-mark">✦</span><span>DDS <em>Viewer</em></span></a>
+      <a class="brand" href="./"><span class="brand-mark">✦</span><span>Image <em>Viewer</em></span></a>
       <span class="local-only"><i></i> local only</span>
     </header>
 
-    <section class="workspace" aria-label="DDS viewer">
-      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Open a DDS file">
+    <section class="workspace" aria-label="Image viewer">
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Open an image file">
         <input id="file-input" type="file" accept=".dds,image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp" hidden>
         <input id="batch-input" type="file" accept=".dds,image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp" multiple hidden>
+        <input id="compare-input" type="file" accept=".dds,image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp" hidden>
         <div class="drop-icon"><span>↥</span></div>
         <h2>Drop an image or DDS file here</h2>
         <div class="drop-actions"><button id="browse" class="ghost-button accent-button" type="button">Browse files</button><button id="batch-zip-empty" class="ghost-button" type="button">Batch Convert</button></div>
@@ -26,37 +27,44 @@
 
       <div id="viewer" class="viewer hidden">
         <div class="viewer-head">
-          <div class="file-title"><span id="file-badge" class="file-badge">DDS</span><div><h2 id="file-name">texture.dds</h2><p id="file-meta">Ready to inspect</p></div></div>
-          <div class="head-actions"><button id="export-png" class="ghost-button accent-button" type="button">↓ Export PNG</button><button id="batch-zip" class="ghost-button" type="button">▤ Batch Convert</button><button id="new-file" class="ghost-button" type="button">＋ Open another</button></div>
+          <div class="file-title"><span id="file-badge" class="file-badge">IMAGE</span><div><h2 id="file-name">image</h2><p id="file-meta">Ready to inspect</p></div></div>
+          <div class="head-actions"><button id="export-png" class="ghost-button accent-button" type="button">↓ Convert to…</button><button id="batch-zip" class="ghost-button" type="button">▤ Convert Batch</button><button id="compare-button" class="ghost-button" type="button">↔ Compare</button><button id="new-file" class="ghost-button" type="button">＋ Open another</button></div>
         </div>
         <div id="replace-hint" class="replace-hint" aria-hidden="true">Drop to open this texture</div>
         <div class="viewer-grid">
           <div class="stage-wrap">
-            <div id="stage" class="stage"><canvas id="canvas"></canvas><img id="native-image" class="native-image hidden" alt="Preview" draggable="false"><div id="empty-stage" class="empty-stage">No preview</div></div>
-            <div class="stage-tools"><button id="checker" class="tool-button active" type="button">▦ Checkerboard</button><button id="fullscreen" class="tool-button" type="button">⛶ Fullscreen</button><span id="zoom-label">Fit</span><button id="zoom-out" class="round-button" type="button" aria-label="Zoom out">−</button><button id="zoom-in" class="round-button" type="button" aria-label="Zoom in">＋</button></div>
+            <div id="stage" class="stage"><div id="preview-frame" class="preview-frame"><canvas id="canvas"></canvas><img id="native-image" class="native-image hidden" alt="Preview" draggable="false"><canvas id="compare-canvas" class="comparison-preview hidden"></canvas><img id="compare-image" class="native-image comparison-preview hidden" alt="Comparison preview" draggable="false"><div id="compare-divider" class="compare-divider hidden"><span>A / B</span><input id="compare-range" type="range" min="0" max="100" value="50" aria-label="Comparison split"><button id="compare-handle" type="button" aria-label="Drag comparison split">↔</button></div></div><div id="empty-stage" class="empty-stage">No preview</div></div>
+            <div class="stage-tools"><button id="checker" class="tool-button active" type="button">▦ Checkerboard</button><button id="filter" class="tool-button active" type="button">▦ Nearest</button><button id="fullscreen" class="tool-button" type="button">⛶ Fullscreen</button><span id="zoom-label">Fit</span><button id="zoom-out" class="round-button" type="button" aria-label="Zoom out">−</button><button id="zoom-in" class="round-button" type="button" aria-label="Zoom in">＋</button></div>
           </div>
           <aside class="inspector">
-            <div id="mip-control" class="control-block"><label for="mip-select">Mip level <span id="mip-count">1 / 1</span></label><select id="mip-select"></select></div>
+            <div class="asset-switcher" aria-label="Metadata selection"><button id="primary-asset" class="asset-card active" type="button"><span class="asset-key">A</span><span><b id="primary-asset-name">Primary image</b><small id="primary-asset-meta">No file loaded</small></span></button><button id="comparison-asset" class="asset-card hidden" type="button"><span class="asset-key">B</span><span><b id="comparison-asset-name">Comparison image</b><small id="comparison-asset-meta"></small></span></button></div>
+            <div id="comparison-summary" class="comparison-summary hidden"></div>
+            <div id="dds-controls" class="dds-controls"><p>DDS texture controls</p><div id="mip-control" class="control-block"><label for="mip-select">Mip level <span id="mip-count">1 / 1</span></label><select id="mip-select"></select></div>
             <div id="face-control" class="control-block hidden"><label for="face-select">Cube face</label><select id="face-select"><option value="0">Positive X</option><option value="1">Negative X</option><option value="2">Positive Y</option><option value="3">Negative Y</option><option value="4">Positive Z</option><option value="5">Negative Z</option></select></div>
-            <div class="details"><h3>Texture details</h3><dl id="details-list"></dl></div>
+            </div><div class="details"><h3 id="metadata-title">Image metadata</h3><dl id="details-list"></dl></div>
           </aside>
         </div>
       </div>
       <div id="error" class="error hidden" role="alert"></div>
+      <div id="batch-dialog" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="batch-title"><div class="dialog-card"><div><p id="conversion-kicker" class="dialog-kicker">Convert image</p><h2 id="batch-title">Choose output settings</h2></div><label for="batch-format">Format</label><select id="batch-format"><option value="image/png">PNG — lossless</option><option value="image/webp">WebP</option><option value="image/jpeg">JPEG</option></select><label for="batch-quality">Quality <span id="batch-quality-value">92</span></label><input id="batch-quality" type="range" min="60" max="100" value="92"><p id="conversion-description">Your image is converted locally in this browser.</p><div class="dialog-actions"><button id="batch-cancel" class="ghost-button" type="button">Cancel</button><button id="batch-choose" class="ghost-button accent-button" type="button">Convert</button></div></div></div>
     </section>
     <section class="faq" aria-labelledby="faq-title">
       <h2 id="faq-title">FAQ</h2>
       <details>
         <summary>What is a DDS file?</summary>
-        <p>DDS is a texture format commonly used by games and graphics applications. It can store compressed textures and multiple mipmap levels.</p>
+        <p>DDS is a texture format commonly used by games and graphics applications. It can store compressed textures and multiple mipmap levels alongside ordinary image data.</p>
       </details>
       <details>
         <summary>Which formats are supported?</summary>
-        <p>DDS Viewer supports PNG, JPEG, GIF, WebP, AVIF, BMP, and DDS textures including BC1–BC5 / DXT1–DXT5, mipmaps, and cube maps.</p>
+        <p>Image Viewer supports PNG, JPEG, GIF, WebP, AVIF, BMP, and DDS textures including BC1–BC5 / DXT1–DXT5, mipmaps, and cube maps.</p>
       </details>
       <details>
-        <summary>How does PNG conversion work?</summary>
-        <p>Export PNG saves the visible image or the selected DDS mip level and cube face. Batch Convert saves the first mip level of each DDS and every selected standard image into one ZIP archive.</p>
+        <summary>How does conversion work?</summary>
+        <p>Convert to… saves the visible image or selected DDS mip level and cube face in your chosen format. Convert Batch saves the first mip level of each DDS and every selected standard image into one ZIP archive.</p>
+      </details>
+      <details>
+        <summary>How does Compare work?</summary>
+        <p>Open a file, choose Compare, then select a second file. Use the slider to reveal each side. Both images share the same pan and zoom; DDS comparisons use the closest available mip level and cube face.</p>
       </details>
       <details>
         <summary>Are my files uploaded?</summary>

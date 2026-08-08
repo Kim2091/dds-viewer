@@ -1,8 +1,10 @@
-# DDS Lens
+# Image Viewer
 
-A dependency-free DDS texture viewer that runs entirely in the browser. It is ready to deploy as a static GitHub Pages site.
+A dependency-free image viewer that runs entirely in the browser. It supports common browser image formats alongside DDS textures and is ready to deploy as a static GitHub Pages site.
 
 ## Supported formats
+
+- PNG, JPEG, GIF, WebP, AVIF, and BMP (browser-native decoding)
 
 - DXT1 / BC1
 - DXT3 / BC2
