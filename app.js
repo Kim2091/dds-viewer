@@ -3,7 +3,28 @@
   const $ = (id) => document.getElementById(id);
   const dropzone = $('dropzone'), input = $('file-input'), viewer = $('viewer'), error = $('error'), canvas = $('canvas'), nativeImage = $('native-image'), compareCanvas = $('compare-canvas'), compareImage = $('compare-image'), compareCtx = compareCanvas.getContext('2d');
   const ctx = canvas.getContext('2d'), state = { kind:null, texture:null, native:null, comparison:null, inspector:'primary', mip:0, face:0, zoom:1, checker:true, nearest:true };
-  const formats = { 0x31545844:'DXT1', 0x33545844:'DXT3', 0x35545844:'DXT5', 0x32495441:'ATI2', 0x31495441:'ATI1' };
+  const legacyDDSFormats = {
+    0x31545844:{format:'DXT1',compression:'BC1 / DXT1'},
+    0x32545844:{format:'DXT3',compression:'BC2 / DXT2 (premultiplied alpha)'},
+    0x33545844:{format:'DXT3',compression:'BC2 / DXT3'},
+    0x34545844:{format:'DXT5',compression:'BC3 / DXT4 (premultiplied alpha)'},
+    0x35545844:{format:'DXT5',compression:'BC3 / DXT5'},
+    0x31495441:{format:'ATI1',compression:'BC4 / ATI1'},
+    0x55344342:{format:'ATI1',compression:'BC4U'},
+    0x53344342:{format:'ATI1',compression:'BC4S'},
+    0x32495441:{format:'ATI2',compression:'BC5 / ATI2'},
+    0x55354342:{format:'ATI2',compression:'BC5U'},
+    0x53354342:{format:'ATI2',compression:'BC5S'}
+  };
+  const dxgiDDSFormats = {
+    11:{format:'RGBA16',colorSpace:'Linear'},24:{format:'RGB10A2',colorSpace:'Linear'},28:{format:'RGBA8',colorSpace:'Linear'},29:{format:'RGBA8',colorSpace:'sRGB'},49:{format:'RG8',colorSpace:'Linear'},61:{format:'R8',colorSpace:'Linear'},65:{format:'A8',colorSpace:'Linear'},
+    70:{format:'DXT1',compression:'BC1 (typeless)'},71:{format:'DXT1',compression:'BC1',colorSpace:'Linear'},72:{format:'DXT1',compression:'BC1',colorSpace:'sRGB'},
+    73:{format:'DXT3',compression:'BC2 (typeless)'},74:{format:'DXT3',compression:'BC2',colorSpace:'Linear'},75:{format:'DXT3',compression:'BC2',colorSpace:'sRGB'},
+    76:{format:'DXT5',compression:'BC3 (typeless)'},77:{format:'DXT5',compression:'BC3',colorSpace:'Linear'},78:{format:'DXT5',compression:'BC3',colorSpace:'sRGB'},
+    79:{format:'ATI1',compression:'BC4 (typeless)'},80:{format:'ATI1',compression:'BC4 UNORM',colorSpace:'Linear'},81:{format:'ATI1',compression:'BC4 SNORM',colorSpace:'Linear'},
+    82:{format:'ATI2',compression:'BC5 (typeless)'},83:{format:'ATI2',compression:'BC5 UNORM',colorSpace:'Linear'},84:{format:'ATI2',compression:'BC5 SNORM',colorSpace:'Linear'},
+    85:{format:'RGB565',colorSpace:'Linear'},86:{format:'ARGB1555',colorSpace:'Linear'},87:{format:'BGRA8',colorSpace:'Linear'},91:{format:'BGRA8',colorSpace:'sRGB'},115:{format:'ARGB4444',colorSpace:'Linear'}
+  };
   const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
   function fail(message){ error.textContent=message; error.classList.remove('hidden'); viewer.classList.remove('hidden'); dropzone.classList.remove('hidden'); }
   function isDDS(file){return /\.dds$/i.test(file.name)}
@@ -26,15 +47,18 @@
     const v=new DataView(buffer); if(v.byteLength<128||u32(v,0)!==0x20534444)throw Error('This does not look like a DDS file.');
     const h={size:u32(v,4),flags:u32(v,8),height:u32(v,12),width:u32(v,16),pitch:u32(v,20),depth:u32(v,24),mips:u32(v,28),pfFlags:u32(v,80),fourCC:u32(v,84),rgbBits:u32(v,88),rMask:u32(v,92),gMask:u32(v,96),bMask:u32(v,100),aMask:u32(v,104),caps2:u32(v,112)};
     if(h.size!==124)throw Error('Invalid DDS header size.');
-    let format=formats[h.fourCC]||null, offset=128, arraySize=1, isCube=!!(h.caps2&0x200);
-    if(h.fourCC===0x30315844){ if(v.byteLength<148)throw Error('DDS DX10 header is incomplete.'); const dxgi=u32(v,128); offset=148; arraySize=u32(v,140)||1; isCube=!!(u32(v,136)&4); const names={11:'RGBA16',24:'RGB10A2',28:'RGBA8',29:'RGBA8',49:'RG8',61:'R8',65:'A8',71:'BC1',72:'BC1',74:'BC2',75:'BC2',77:'BC3',78:'BC3',80:'BC4',81:'BC4',83:'BC5',84:'BC5',85:'RGB565',86:'ARGB1555',87:'BGRA8',91:'BGRA8',115:'ARGB4444'}; format=names[dxgi]||`DXGI ${dxgi}`;}
-    if(!format){if(h.pfFlags&0x40){if(h.rgbBits===32){if(h.rMask===0x3ff&&h.gMask===0xffc00&&h.bMask===0x3ff00000)format='RGB10A2';else if(h.rMask===0x00ff0000&&h.gMask===0x0000ff00&&h.bMask===0x000000ff)format='BGRA8';else if(h.rMask===0x000000ff&&h.gMask===0x0000ff00&&h.bMask===0x00ff0000)format='RGBA8'}else if(h.rgbBits===24&&h.rMask===0x00ff0000&&h.gMask===0x0000ff00&&h.bMask===0x000000ff)format='BGR8';else if(h.rgbBits===16){if(h.rMask===0xf800&&h.gMask===0x07e0&&h.bMask===0x001f)format='RGB565';else if(h.rMask===0x7c00&&h.gMask===0x03e0&&h.bMask===0x001f)format='ARGB1555';else if(h.rMask===0x0f00&&h.gMask===0x00f0&&h.bMask===0x000f)format='ARGB4444'}}else if(h.pfFlags&0x20000)format=h.rgbBits===16?'L8A8':'L8';else if(h.pfFlags&0x2)format='A8';}
-    if(!format||!['DXT1','DXT3','DXT5','ATI1','ATI2','RGBA8','BGRA8','RGB565','ARGB1555','ARGB4444','RGB10A2','RGBA16','BGR8','R8','RG8','L8','L8A8','A8','BC1','BC2','BC3','BC4','BC5'].includes(format))throw Error(`Unsupported DDS format${format?`: ${format}`:''}. This viewer supports BC1–BC5, common RGBA, luminance, and packed 16/32-bit textures.`);
-    format=format.replace('BC1','DXT1').replace('BC2','DXT3').replace('BC3','DXT5').replace('BC4','ATI1').replace('BC5','ATI2');
+    const legacyInfo=legacyDDSFormats[h.fourCC];
+    let format=legacyInfo?.format||null, compression=legacyInfo?.compression?`Block-compressed (${legacyInfo.compression})`:'Uncompressed', colorSpace='Unspecified', offset=128, arraySize=1, isCube=!!(h.caps2&0x200);
+    if(h.fourCC===0x30315844){
+      if(v.byteLength<148)throw Error('DDS DX10 header is incomplete.');
+      const dxgi=u32(v,128),info=dxgiDDSFormats[dxgi];offset=148;arraySize=u32(v,140)||1;isCube=!!(u32(v,136)&4);format=info?.format||`DXGI ${dxgi}`;compression=info?.compression?`Block-compressed (${info.compression})`:'Uncompressed';colorSpace=info?.colorSpace||'Unspecified';
+    }
+    if(!format&&!(h.pfFlags&0x4)){if(h.pfFlags&0x40){if(h.rgbBits===32){if(h.rMask===0x3ff&&h.gMask===0xffc00&&h.bMask===0x3ff00000)format='RGB10A2';else if(h.rMask===0x00ff0000&&h.gMask===0x0000ff00&&h.bMask===0x000000ff)format='BGRA8';else if(h.rMask===0x000000ff&&h.gMask===0x0000ff00&&h.bMask===0x00ff0000)format='RGBA8'}else if(h.rgbBits===24&&h.rMask===0x00ff0000&&h.gMask===0x0000ff00&&h.bMask===0x000000ff)format='BGR8';else if(h.rgbBits===16){if(h.rMask===0xf800&&h.gMask===0x07e0&&h.bMask===0x001f)format='RGB565';else if(h.rMask===0x7c00&&h.gMask===0x03e0&&h.bMask===0x001f)format='ARGB1555';else if(h.rMask===0x0f00&&h.gMask===0x00f0&&h.bMask===0x000f)format='ARGB4444'}}else if(h.pfFlags&0x20000)format=h.rgbBits===16?'L8A8':'L8';else if(h.pfFlags&0x2)format='A8';}
+    if(!format||!['DXT1','DXT3','DXT5','ATI1','ATI2','RGBA8','BGRA8','RGB565','ARGB1555','ARGB4444','RGB10A2','RGBA16','BGR8','R8','RG8','L8','L8A8','A8'].includes(format))throw Error(`Unsupported DDS format${format?`: ${format}`:''}. This viewer supports BC1–BC5, common RGBA, luminance, and packed 16/32-bit textures.`);
     if(arraySize>1||h.depth>1)throw Error('DDS texture arrays and volume textures are not supported yet.');
     const faces=isCube?6:1, mips=Math.max(1,h.mips||1), levels=[]; let ptr=offset;
     for(let face=0;face<faces;face++)for(let mip=0;mip<mips;mip++){const w=Math.max(1,h.width>>mip),hh=Math.max(1,h.height>>mip),size=levelSize(w,hh,format);if(ptr+size>v.byteLength)throw Error('DDS pixel data is truncated.');levels.push({w,h:hh,data:new Uint8Array(buffer,ptr,size)});ptr+=size;}
-    return {name,width:h.width,height:h.height,format,mips,faces,levels,size:buffer.byteLength,depth:h.depth||1};
+    return {name,width:h.width,height:h.height,format,mips,faces,levels,size:buffer.byteLength,depth:h.depth||1,colorSpace,compression};
   }
   function levelSize(w,h,f){return ['DXT1','ATI1'].includes(f)?Math.max(1,Math.ceil(w/4))*Math.max(1,Math.ceil(h/4))*8:['DXT3','DXT5','ATI2'].includes(f)?Math.max(1,Math.ceil(w/4))*Math.max(1,Math.ceil(h/4))*16:w*h*(['A8','R8','L8'].includes(f)?1:['RGB565','ARGB1555','ARGB4444','L8A8','RG8'].includes(f)?2:f==='BGR8'?3:f==='RGBA16'?8:4)}
   function rgb565(x){return [(x&31)*255/31,((x>>5)&63)*255/63,((x>>11)&31)*255/31]}
@@ -87,7 +111,8 @@
   const primaryAsset=()=>state.kind==='native'?state.native:state.texture;
   const assetDimensions=asset=>asset.native?{width:asset.image.naturalWidth,height:asset.image.naturalHeight}:{width:asset.width,height:asset.height};
   const assetFormat=asset=>asset.native?(asset.type||asset.name.split('.').pop()?.toUpperCase()||'Image'):asset.format;
-  function metadataRows(asset){const {width,height}=assetDimensions(asset),ratio=(width/height).toFixed(3),rows=[['File name',asset.name],['Format',assetFormat(asset)],['Dimensions',`${width} × ${height}`],['Aspect ratio',`${ratio}:1`],['File size',formatBytes(asset.size)]];if(asset.lastModified)rows.push(['Modified',new Date(asset.lastModified).toLocaleDateString()]);if(asset.native){const type=(asset.type||'').toLowerCase();rows.push(['Media type',asset.type||'Unknown'],['Transparency',/png|gif|webp|avif/.test(type)?'Supported by format':'Not supported'],['Animation',/gif|webp|avif|png/.test(type)?'Plays when animated':'Still image'])}else rows.push(['Image type',asset.faces===6?'Cube map':'2D image'],['Mip levels',asset.mips],['Cube faces',asset.faces],['Pixel format',asset.format],['Transparency',/DXT3|DXT5|RGBA|ARGB|A8/.test(asset.format)?'Possible':'None']);return rows}
+  function nativeCompression(type){return ({'image/png':'Lossless (PNG)','image/jpeg':'Lossy (JPEG)','image/gif':'Lossless (GIF)','image/webp':'WebP (varies)','image/avif':'AVIF (varies)','image/bmp':'Uncompressed'}[type]||'Not available')}
+  function metadataRows(asset){const {width,height}=assetDimensions(asset),ratio=(width/height).toFixed(3),rows=[['File name',asset.name],['Format',assetFormat(asset)],['Dimensions',`${width} × ${height}`],['Aspect ratio',`${ratio}:1`],['File size',formatBytes(asset.size)]];if(asset.lastModified)rows.push(['Modified',new Date(asset.lastModified).toLocaleDateString()]);if(asset.native){const type=(asset.type||'').toLowerCase();rows.push(['Media type',asset.type||'Unknown'],['Compression',nativeCompression(type)],['Color space','Browser managed'],['Transparency',/png|gif|webp|avif/.test(type)?'Supported by format':'Not supported'],['Animation',/gif|webp|avif|png/.test(type)?'Plays when animated':'Still image'])}else rows.push(['Image type',asset.faces===6?'Cube map':'2D image'],['Compression',asset.compression||'Unspecified'],['Color space',asset.colorSpace||'Unspecified'],['Mip levels',asset.mips],['Cube faces',asset.faces],['Pixel format',asset.format],['Transparency',/DXT3|DXT5|RGBA|ARGB|A8/.test(asset.format)?'Possible':'None']);return rows}
   function renderInspector(){const primary=primaryAsset(),comparison=state.comparison;if(!primary)return;const selected=state.inspector==='comparison'&&comparison?comparison:primary,selectedKey=selected===primary?'primary':'comparison',selectedDimensions=assetDimensions(selected);$('primary-asset-name').textContent=primary.name;$('primary-asset-meta').textContent=`${assetFormat(primary)} · ${selected===primary?`${selectedDimensions.width} × ${selectedDimensions.height}`:formatBytes(primary.size)}`;$('primary-asset').classList.toggle('active',selectedKey==='primary');$('comparison-asset').classList.toggle('hidden',!comparison);if(comparison){const dims=assetDimensions(comparison);$('comparison-asset-name').textContent=comparison.name;$('comparison-asset-meta').textContent=`${assetFormat(comparison)} · ${dims.width} × ${dims.height}`;$('comparison-asset').classList.toggle('active',selectedKey==='comparison');const a=assetDimensions(primary),same=a.width===dims.width&&a.height===dims.height;$('comparison-summary').textContent=same?`A and B match at ${a.width} × ${a.height}.`:`A: ${a.width} × ${a.height}  •  B: ${dims.width} × ${dims.height} — the images are aligned to A's frame.`;$('comparison-summary').classList.remove('hidden')}else $('comparison-summary').classList.add('hidden');$('metadata-title').textContent=`${selectedKey==='primary'?'A':'B'} — Image metadata`;$('details-list').innerHTML=metadataRows(selected).map(([label,value])=>`<div><dt>${escapeHTML(label)}</dt><dd>${escapeHTML(value)}</dd></div>`).join('');const primaryDDS=!primary.native;$('dds-controls').classList.toggle('hidden',!(selectedKey==='primary'&&primaryDDS))}
   $('primary-asset').onclick=()=>{state.inspector='primary';renderInspector()};$('comparison-asset').onclick=()=>{if(state.comparison){state.inspector='comparison';renderInspector()}};
   function render(){if(state.kind==='native')renderNative();else renderDDS();sizePreviewFrame();renderComparison();renderInspector();['export-png','compare-button','checker','filter','fullscreen','zoom-out','zoom-in'].forEach(id=>$(id).disabled=false)}
