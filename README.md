@@ -10,6 +10,7 @@ A dependency-free DDS texture viewer that runs entirely in the browser. It is re
 - ATI1 / BC4
 - ATI2 / BC5
 - Common uncompressed RGBA8, BGRA8, RGB565, and A8 DDS files
+- R8, RG8, luminance, BGR8, ARGB1555, ARGB4444, RGB10A2, and RGBA16 files
 - Mipmaps and cube-map faces
 
 ## GitHub Pages

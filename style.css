@@ -6,3 +6,7 @@
 .workspace{min-height:0;margin-top:28px}.dropzone{padding:54px 20px 48px}.faq summary::after{content:'+'}.faq details[open] summary::after{content:'-'}
 .drop-actions{display:flex;justify-content:center;gap:10px}.drop-actions .ghost-button{padding:9px 13px}
 .drop-actions .ghost-button{min-width:112px}.drop-actions .ghost-button:hover{transform:translateY(-1px)}@media(max-width:700px){.ghost-button{font-size:12px;padding:9px 13px}.head-actions{flex-wrap:wrap;justify-content:flex-end}}
+.stage{cursor:grab}.stage.panning{cursor:grabbing}.viewer:fullscreen{width:100vw;height:100vh;border-radius:0;display:flex;flex-direction:column}.viewer:fullscreen .viewer-grid{flex:1;min-height:0}.viewer:fullscreen .stage{height:calc(100vh - 126px)}
+.stage{overflow:hidden}
+.stage .native-image{image-rendering:auto;box-shadow:0 15px 40px #0008;max-width:none;object-fit:contain}
+.stage .native-image{-webkit-user-drag:none;user-select:none}

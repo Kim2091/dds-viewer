@@ -16,27 +16,27 @@
 
     <section class="workspace" aria-label="DDS viewer">
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Open a DDS file">
-        <input id="file-input" type="file" accept=".dds,application/octet-stream" hidden>
-        <input id="batch-input" type="file" accept=".dds,application/octet-stream" multiple hidden>
+        <input id="file-input" type="file" accept=".dds,image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp" hidden>
+        <input id="batch-input" type="file" accept=".dds,image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp" multiple hidden>
         <div class="drop-icon"><span>↥</span></div>
-        <h2>Drop a DDS file here</h2>
+        <h2>Drop an image or DDS file here</h2>
         <div class="drop-actions"><button id="browse" class="ghost-button accent-button" type="button">Browse files</button><button id="batch-zip-empty" class="ghost-button" type="button">Batch Convert</button></div>
-        <small>Supports DDS · DXT1/3/5 · BC4/5 · RGBA · mipmaps</small>
+        <small>Supports DDS · PNG · JPEG · GIF · WebP · AVIF · BMP</small>
       </div>
 
       <div id="viewer" class="viewer hidden">
         <div class="viewer-head">
-          <div class="file-title"><span class="file-badge">DDS</span><div><h2 id="file-name">texture.dds</h2><p id="file-meta">Ready to inspect</p></div></div>
+          <div class="file-title"><span id="file-badge" class="file-badge">DDS</span><div><h2 id="file-name">texture.dds</h2><p id="file-meta">Ready to inspect</p></div></div>
           <div class="head-actions"><button id="export-png" class="ghost-button accent-button" type="button">↓ Export PNG</button><button id="batch-zip" class="ghost-button" type="button">▤ Batch Convert</button><button id="new-file" class="ghost-button" type="button">＋ Open another</button></div>
         </div>
         <div id="replace-hint" class="replace-hint" aria-hidden="true">Drop to open this texture</div>
         <div class="viewer-grid">
           <div class="stage-wrap">
-            <div id="stage" class="stage"><canvas id="canvas"></canvas><div id="empty-stage" class="empty-stage">No preview</div></div>
-            <div class="stage-tools"><button id="checker" class="tool-button active" type="button">▦ Checkerboard</button><span id="zoom-label">Fit</span><button id="zoom-out" class="round-button" type="button" aria-label="Zoom out">−</button><button id="zoom-in" class="round-button" type="button" aria-label="Zoom in">＋</button></div>
+            <div id="stage" class="stage"><canvas id="canvas"></canvas><img id="native-image" class="native-image hidden" alt="Preview" draggable="false"><div id="empty-stage" class="empty-stage">No preview</div></div>
+            <div class="stage-tools"><button id="checker" class="tool-button active" type="button">▦ Checkerboard</button><button id="fullscreen" class="tool-button" type="button">⛶ Fullscreen</button><span id="zoom-label">Fit</span><button id="zoom-out" class="round-button" type="button" aria-label="Zoom out">−</button><button id="zoom-in" class="round-button" type="button" aria-label="Zoom in">＋</button></div>
           </div>
           <aside class="inspector">
-            <div class="control-block"><label for="mip-select">Mip level <span id="mip-count">1 / 1</span></label><select id="mip-select"></select></div>
+            <div id="mip-control" class="control-block"><label for="mip-select">Mip level <span id="mip-count">1 / 1</span></label><select id="mip-select"></select></div>
             <div id="face-control" class="control-block hidden"><label for="face-select">Cube face</label><select id="face-select"><option value="0">Positive X</option><option value="1">Negative X</option><option value="2">Positive Y</option><option value="3">Negative Y</option><option value="4">Positive Z</option><option value="5">Negative Z</option></select></div>
             <div class="details"><h3>Texture details</h3><dl id="details-list"></dl></div>
           </aside>
@@ -52,11 +52,11 @@
       </details>
       <details>
         <summary>Which formats are supported?</summary>
-        <p>DDS Viewer supports DXT1, DXT3, DXT5, BC4, BC5, RGBA8, BGRA8, RGB565, A8, mipmaps, and cube maps.</p>
+        <p>DDS Viewer supports PNG, JPEG, GIF, WebP, AVIF, BMP, and DDS textures including BC1–BC5 / DXT1–DXT5, mipmaps, and cube maps.</p>
       </details>
       <details>
         <summary>How does PNG conversion work?</summary>
-        <p>Export PNG decodes the selected mip level and cube face in your browser. Batch Convert exports the first mip level of each selected file into one ZIP archive.</p>
+        <p>Export PNG saves the visible image or the selected DDS mip level and cube face. Batch Convert saves the first mip level of each DDS and every selected standard image into one ZIP archive.</p>
       </details>
       <details>
         <summary>Are my files uploaded?</summary>
