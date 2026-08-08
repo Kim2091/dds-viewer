@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e1118">
+  <title>DDS Viewer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="./"><span class="brand-mark">✦</span><span>DDS <em>Viewer</em></span></a>
+      <span class="local-only"><i></i> local only</span>
+    </header>
+
+    <section class="workspace" aria-label="DDS viewer">
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Open a DDS file">
+        <input id="file-input" type="file" accept=".dds,application/octet-stream" hidden>
+        <input id="batch-input" type="file" accept=".dds,application/octet-stream" multiple hidden>
+        <div class="drop-icon"><span>↥</span></div>
+        <h2>Drop a DDS file here</h2>
+        <p><button id="browse" class="text-button" type="button">Browse files</button></p>
+        <small>Supports DDS · DXT1/3/5 · BC4/5 · RGBA · mipmaps</small>
+      </div>
+
+      <div id="viewer" class="viewer hidden">
+        <div class="viewer-head">
+          <div class="file-title"><span class="file-badge">DDS</span><div><h2 id="file-name">texture.dds</h2><p id="file-meta">Ready to inspect</p></div></div>
+          <div class="head-actions"><button id="export-png" class="ghost-button accent-button" type="button">↓ Export PNG</button><button id="batch-export" class="ghost-button" type="button">▤ Batch convert</button><button id="new-file" class="ghost-button" type="button">＋ Open another</button></div>
+        </div>
+        <div id="replace-hint" class="replace-hint" aria-hidden="true">Drop to open this texture</div>
+        <div class="viewer-grid">
+          <div class="stage-wrap">
+            <div id="stage" class="stage"><canvas id="canvas"></canvas><div id="empty-stage" class="empty-stage">No preview</div></div>
+            <div class="stage-tools"><button id="checker" class="tool-button active" type="button">▦ Checkerboard</button><span id="zoom-label">Fit</span><button id="zoom-out" class="round-button" type="button" aria-label="Zoom out">−</button><button id="zoom-in" class="round-button" type="button" aria-label="Zoom in">＋</button></div>
+          </div>
+          <aside class="inspector">
+            <div class="control-block"><label for="mip-select">Mip level <span id="mip-count">1 / 1</span></label><select id="mip-select"></select></div>
+            <div id="face-control" class="control-block hidden"><label for="face-select">Cube face</label><select id="face-select"><option value="0">Positive X</option><option value="1">Negative X</option><option value="2">Positive Y</option><option value="3">Negative Y</option><option value="4">Positive Z</option><option value="5">Negative Z</option></select></div>
+            <div class="details"><h3>Texture details</h3><dl id="details-list"></dl></div>
+          </aside>
+        </div>
+      </div>
+      <div id="error" class="error hidden" role="alert"></div>
+    </section>
+    <section class="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">FAQ</h2>
+      <details>
+        <summary>What is a DDS file?</summary>
+        <p>DDS is a texture format commonly used by games and graphics applications. It can store compressed textures and multiple mipmap levels.</p>
+      </details>
+      <details>
+        <summary>Which formats are supported?</summary>
+        <p>DDS Viewer supports DXT1, DXT3, DXT5, BC4, BC5, RGBA8, BGRA8, RGB565, A8, mipmaps, and cube maps.</p>
+      </details>
+      <details>
+        <summary>How does PNG conversion work?</summary>
+        <p>Export PNG decodes the selected mip level and cube face in your browser, then downloads it as a PNG. Batch convert exports the first mip level of each selected file.</p>
+      </details>
+      <details>
+        <summary>Are my files uploaded?</summary>
+        <p>No. Files are read locally in your browser and are not sent to a server.</p>
+      </details>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
