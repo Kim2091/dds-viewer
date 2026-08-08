@@ -20,14 +20,14 @@
         <input id="batch-input" type="file" accept=".dds,application/octet-stream" multiple hidden>
         <div class="drop-icon"><span>↥</span></div>
         <h2>Drop a DDS file here</h2>
-        <p><button id="browse" class="text-button" type="button">Browse files</button></p>
+        <div class="drop-actions"><button id="browse" class="ghost-button accent-button" type="button">Browse files</button><button id="batch-zip-empty" class="ghost-button" type="button">Batch Convert</button></div>
         <small>Supports DDS · DXT1/3/5 · BC4/5 · RGBA · mipmaps</small>
       </div>
 
       <div id="viewer" class="viewer hidden">
         <div class="viewer-head">
           <div class="file-title"><span class="file-badge">DDS</span><div><h2 id="file-name">texture.dds</h2><p id="file-meta">Ready to inspect</p></div></div>
-          <div class="head-actions"><button id="export-png" class="ghost-button accent-button" type="button">↓ Export PNG</button><button id="batch-export" class="ghost-button" type="button">▤ Batch convert</button><button id="new-file" class="ghost-button" type="button">＋ Open another</button></div>
+          <div class="head-actions"><button id="export-png" class="ghost-button accent-button" type="button">↓ Export PNG</button><button id="batch-zip" class="ghost-button" type="button">▤ Batch Convert</button><button id="new-file" class="ghost-button" type="button">＋ Open another</button></div>
         </div>
         <div id="replace-hint" class="replace-hint" aria-hidden="true">Drop to open this texture</div>
         <div class="viewer-grid">
@@ -56,7 +56,7 @@
       </details>
       <details>
         <summary>How does PNG conversion work?</summary>
-        <p>Export PNG decodes the selected mip level and cube face in your browser, then downloads it as a PNG. Batch convert exports the first mip level of each selected file.</p>
+        <p>Export PNG decodes the selected mip level and cube face in your browser. Batch Convert exports the first mip level of each selected file into one ZIP archive.</p>
       </details>
       <details>
         <summary>Are my files uploaded?</summary>
